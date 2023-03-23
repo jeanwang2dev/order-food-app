@@ -1,0 +1,21 @@
+{
+  "name": "nodejscourseupdate",
+  "version": "1.0.0",
+  "description": "nodejs ejs shopping cart app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon app.js",
+    "start_local": "nodemon -r dotenv/config app.js",
+    "start": "node app.js"
+  },
+  "author": "Yijing Wang",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "dotenv": "^16.0.3",
+    "nodemon": "^2.0.22"
+  }
+}
