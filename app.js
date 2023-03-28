@@ -5,17 +5,17 @@ const app = express();
 const { port } = require('./utils/config');
 //const port = process.env.PORT
 
-app.use( (req, res, next) => {
-    console.log('In the middleware');
-    next(); // Allows the request to continue to the next middleware in line
-});
+// app.use( (req, res, next) => {
+//     console.log('In the middleware');
+//     next(); // Allows the request to continue to the next middleware in line
+// });
 
-app.use((req, res, next) => {
-    console.log('In another middleware');
-    res.send('<h1> hello from Express!</h1>');
-});
+// app.use((req, res, next) => {
+//     console.log('In another middleware');
+//     res.send('<h1> hello from Express!</h1>');
+// });
 
-//app.use(express.json());
+app.use(express.json());
 
 app.listen(port, ()=> console.log(`Server listening on port: ` + port));
 
