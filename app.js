@@ -1,33 +1,45 @@
-
 const express = require('express');
+const path = require('path');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');
+
+const adminRoutes = require('./routes/admin');
+const shopRoutes = require('./routes/shop');
+const errorRoutes = require('./routes/error');
+const { db_username, db_password, db_name, port } = require('./utils/config');
+
+const MONTGODB_URI = "mongodb+srv://" + db_username + ":" + db_password +"@cluster0.beflvhp.mongodb.net/" + db_name + "?retryWrites=true&w=majority";
+
 const app = express();
 
-const { port } = require('./utils/config');
-//const port = process.env.PORT
+/** REGISTER PARSER BEFORE ROUTE HANDLING MIDDLEWARES */
+/** IT CALLS NEXT AT THE END */
+app.use(bodyParser.urlencoded({ extended: false }));
 
-// app.use( (req, res, next) => {
-//     console.log('In the middleware');
-//     next(); // Allows the request to continue to the next middleware in line
-// });
+/*SERVE STATIC FOLDER*/
+app.use(express.static(path.join(__dirname, 'public')));
 
-// app.use((req, res, next) => {
-//     console.log('In another middleware');
-//     res.send('<h1> hello from Express!</h1>');
-// });
+/** USE EJS templating engine */
+// doc: http://expressjs.com/en/4x/api.html#app.set
+app.set('view engine', 'ejs');
+app.set('views', 'views'); 
 
-app.use(express.json());
 
-app.listen(port, ()=> console.log(`Server listening on port: ` + port));
+/** ROUTES */
+app.use('/admin', adminRoutes);
+app.use(shopRoutes);
+app.use(errorRoutes);
 
-app.get('/hello', (req, res) => {
-    console.log('Headers:', req.headers);
-    console.log('Method:', req.method);
-    res.send('Received GET request!\n');
-});
+// app.listen(port, () => console.log(`Server listening on port: ` + port));
 
-app.post('/hello', (req, res) => {
-    console.log('Headers:', req.headers);
-    console.log('Method:', req.method);
-    console.log('Body:', req.body);
-    res.send('Received POST request!\n');
-});
+mongoose
+  .connect( MONTGODB_URI)
+  .then(result=> {
+    console.log("db connected!");
+    app.listen(port, () => {
+        console.log(`Server listening on port: ` + port)
+    });
+  })
+  .catch((err) => {
+    console.log(err);
+  });
