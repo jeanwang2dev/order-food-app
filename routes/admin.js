@@ -3,11 +3,13 @@ const express = require('express');
 const router = express.Router();
 const adminController = require('../controllers/admin');
 
-const products = [];
-
 /** ROUTES */
+// this route reaches '/admin/products' --- GET
+router.get('/products', adminController.getProducts);
 router.get('/add-product', adminController.getAddProduct);
-  
-router.post('/add-product', adminController.postAddProduct);
+router.get('/edit-product/:productId', adminController.getEditProduct);
+
+// router.post('/add-product', adminController.postAddProduct);
+router.post('/edit-product', adminController.postEditProduct);
 
 module.exports = router;

@@ -2,7 +2,7 @@
     <link rel="stylesheet" href="/css/product.css">
 </head>
 <body>
-    <%- include('../includes/navigation.ejs') %>
+    <%- include('../includes/admin-nav.ejs') %>
     <main>  
        <p>This is the home page of shop</p>
        <% if (prods.length > 0 ) { %>   
@@ -12,9 +12,10 @@
                         <header class="card__header">
                             <h1 class="product__title"><%= product.title %></h1>
                             <% if( product.isfeatured ) {%>
-                                <div class="card__featured">featured</div>
+                            <div class="card__featured">featured</div>
                             <% } %>
                         </header>
+                       
                         <div class="card__image">
                             <img src="https://cdn.pixabay.com/photo/2016/03/31/20/51/book-1296045_960_720.png" alt="<%= product.title %>">
                         </div>
@@ -23,7 +24,8 @@
                             <p class="product__description">some descripton</p>
                         </div>
                         <div class="card__actions">
-                            <a href="/products/<%= product._id %>" class="btn">Details</a>
+                            <a href="/admin/edit-product/<%= product._id %>?edit=true" class="btn">Edit</a>
+                            <button class="btn deleteProductBtn" type="btn">Delete</button>   
                         </div>
                     </article>
                 <% } %>
