@@ -26,3 +26,11 @@
   .form-control textarea.invalid{
     border-color: red;
   }
+
+.form-control.checkedbox {
+  display: flex;
+}
+
+.form-control.checkedbox label {
+  white-space: nowrap;
+}
