@@ -1,31 +1,31 @@
 const Product = require("../models/product");
-const uploadImage2GCS = require('../utils/helpers').uploadImage2GCS;
-const createThumbnail = require('../utils/helpers').createThumbnail;
-const deleteImageFromGCS = require('../utils/helpers').deleteImageFromGSC;
+const uploadImage2GCS = require("../utils/helpers").uploadImage2GCS;
+const createThumbnail = require("../utils/helpers").createThumbnail;
+const deleteImageFromGCS = require("../utils/helpers").deleteImageFromGSC;
 
 exports.getProducts = (req, res, next) => {
   Product.find()
-  .then( products => {
-      res.render('admin/product-list', {
-          prods: products,
-          pageTitle: 'Shop Products',
-          path: '/',
-          activeShop: true,
-          productCSS: true
+    .then((products) => {
+      res.render("admin/product-list", {
+        prods: products,
+        pageTitle: "Shop Products",
+        path: "/",
+        activeShop: true,
+        productCSS: true,
       });
-  })
-  .catch(err => {
+    })
+    .catch((err) => {
       console.log(err);
-  })
+    });
 };
 
 exports.getAddProduct = (req, res, next) => {
-    res.render('admin/edit-product', {
-        pageTitle: 'Add Product',
-        path: '/admin/add-product',
-        editing: false,
-        hasError: false,
-    });
+  res.render("admin/edit-product", {
+    pageTitle: "Add Product",
+    path: "/admin/add-product",
+    editing: false,
+    hasError: false,
+  });
 };
 
 exports.getEditProduct = (req, res, next) => {
@@ -57,13 +57,13 @@ exports.postAddProduct = async (req, res, next) => {
   console.log("postAddProduct!");
   const title = req.body.title;
   const image = req.file;
-  const isfeatured = req.body.isfeatured == 1 ? true: false;
+  const isfeatured = req.body.isfeatured == 1 ? true : false;
   const price = req.body.price;
   const desc = req.body.description;
 
   // if no image got picked
   if (!image) {
-    console.log('No image file picked.');
+    console.log("No image file picked.");
     return res.status(422).render("admin/edit-product", {
       pageTitle: "Add Product",
       path: "/admin/add-product",
@@ -77,43 +77,44 @@ exports.postAddProduct = async (req, res, next) => {
       },
     });
   }
-   // upload image to GCS
-   let imageUrl = '';
-   try {
+  // upload image to GCS
+  let imageUrl = "";
+  try {
     const thumbnail = await createThumbnail(image);
     imageUrl = await uploadImage2GCS(thumbnail);
     console.log("Image uploaded.");
   } catch (error) {
     console.log(error);
     console.log("Image upload failed.");
-    next(error)
+    next(error);
   }
 
-  // create product 
+  // create product
   const product = new Product({
-      title: title,
-      isfeatured: isfeatured,
-      price: price,
-      imageUrl: imageUrl,
-      description: desc
-    });
+    title: title,
+    isfeatured: isfeatured,
+    price: price,
+    imageUrl: imageUrl,
+    description: desc,
+    adminId: req.customer,
+  });
   product
-  .save()
-  .then((result) => {
-    console.log("Created Product");
-    //res.redirect("/admin/products");
-  })
-  .catch((err) => {
-    console.log(err);
-  });  
-  res.redirect('/admin/products');
+    .save()
+    .then((result) => {
+      console.log("Created Product");
+      //res.redirect("/admin/products");
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+  res.redirect("/admin/products");
 };
 
 exports.postEditProduct = async (req, res, next) => {
   console.log("postEditProduct!");
   const prodId = req.body.productId;
   const updatedTitle = req.body.title;
-  const updatedIsFeatured = req.body.isfeatured == 1 ? true: false;
+  const updatedIsFeatured = req.body.isfeatured == 1 ? true : false;
   const updatedImage = req.file;
   const updatedPrice = req.body.price;
   const updatedDesc = req.body.description;
@@ -121,8 +122,8 @@ exports.postEditProduct = async (req, res, next) => {
   // find the product and update it
   const product = await Product.findById(prodId);
   // upload image to GCS if new image picked
-  if(!updatedImage) {
-    console.log('no new image picked.');
+  if (!updatedImage) {
+    console.log("no new image picked.");
   } else {
     try {
       //upload new image
@@ -131,10 +132,10 @@ exports.postEditProduct = async (req, res, next) => {
 
       console.log("New Image uploaded.");
       // delete the old image
-      if(product.imageUrl && product.imageUrl !== '' ) {
+      if (product.imageUrl && product.imageUrl !== "") {
         await deleteImageFromGCS(product.imageUrl);
       }
-      // update product imageUrl    
+      // update product imageUrl
       product.imageUrl = imageUrl;
     } catch (error) {
       console.log(error);
@@ -142,7 +143,7 @@ exports.postEditProduct = async (req, res, next) => {
       next(error);
     }
   }
-  
+
   //console.log(product);
   product.title = updatedTitle;
   product.isfeatured = updatedIsFeatured;
@@ -152,24 +153,22 @@ exports.postEditProduct = async (req, res, next) => {
   await product.save();
   console.log("Updated Product");
   res.redirect("/admin/products");
-
-}
+};
 
 exports.postDeleteProduct = async (req, res, next) => {
   const idToDelete = req.body.productId;
   try {
-    const product =  await Product.findByIdAndRemove(idToDelete);
+    const product = await Product.findByIdAndRemove(idToDelete);
+    //console.log(product);
     if (!product) {
       return next(new Error("Product to be deleted not found."));
     }
-    if(product.imageUrl) {
+    if (product.imageUrl) {
       await deleteImageFromGCS(product.imageUrl);
     }
-    console.log('Delete PRODUCT');
+    console.log("Delete PRODUCT");
     res.redirect("/admin/products");
-
-  } catch(err) {
+  } catch (err) {
     console.log(err);
   }
-
-}
+};

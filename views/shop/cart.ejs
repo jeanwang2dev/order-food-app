@@ -1,0 +1,39 @@
+<%- include('../includes/head.ejs') %>
+<link rel="stylesheet" href="/css/cart.css">
+</head>
+<body>
+    <%- include('../includes/navigation.ejs') %>
+    <main>
+        <p>Customer: <strong><%= userName %></strong>'s shopping cart <p>
+            <% if (products.length > 0) { %>
+                <ul class="cart__item-list">
+                    <% products.forEach(productItem => { %>
+                        <li class="cart__item">
+                            <h2><%= productItem.productId.title %></h2>
+                            <h3>$<%= productItem.productId.price %></h3>
+                            <div class="counter">
+                                <div class="counter_btn">+</div>
+                                <div class="counter_count"><%= productItem.quantity %></div>
+                                <div class="counter_btn">-</div>
+                            </div>
+                            <h3>Subtotal: <%= productItem.productId.price * productItem.quantity %></h3>
+                            <form action="/cart-delete-item" method="POST">
+                                <input type="hidden" value="<%= productItem.productId._id %>" name="productId">
+                                <button class="btn danger" type="submit">Delete</button>
+                            </form>
+                        </li>
+                    <% }) %>
+                </ul>
+                <hr>
+                <div class="centered">
+                    <!-- <form action="/create-order" method="POST">                    
+                        <button type="submit" class="btn">Order Now!</button>
+                    </form> -->
+                    <a class="btn" href="/checkout">Order Now!</a>
+                </div>
+    
+            <% } else { %>
+                <h1>No Products in Cart!</h1>
+            <% } %>            
+    </main>
+<%- include('../includes/end.ejs') %>

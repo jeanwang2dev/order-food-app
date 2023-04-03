@@ -13,7 +13,7 @@ const productSchema = new Schema({
     },
     description: {
         type: String,
-        require: true
+        require: false
     },
     isfeatured: {
         type: Boolean,
@@ -21,8 +21,13 @@ const productSchema = new Schema({
     },
     imageUrl: {
         type: String,
-        require: false
+        require: true
     },
+    adminId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Administrator',
+        require: true
+    }
 });
 
 module.exports = mongoose.model('Product', productSchema);
