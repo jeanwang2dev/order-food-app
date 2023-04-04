@@ -4,6 +4,28 @@
 <body>
   <%- include('../includes/navigation.ejs') %>
   <main>
-    <p>This is the orders page for customers:</p>
-</main>
+    <h1>Customer: <strong><%= name %></strong>'s orders:</h1>
+    <% if (orders.length <= 0) { %> 
+    <h2>Nothing there!</h2>
+    <% } else { %>     
+        <ul>
+            <% orders.forEach(order => { %>
+            <li class="order">
+              <!-- <h3>Order -- # <%= order._id %> -- <a href="<%= order.invoiceUrl %>" target="_blank">Invoice</a></h3> -->
+              <p><strong>Created Time:</strong> <%= order.createdAt %></p>
+              <p><strong>Customer Email :</strong> <%= order.customer.email %></p>  
+              <ul>
+                <% order.products.forEach( p => { %>
+                    <li> <%= p.product.title %> ( <%= p.quantity %> ) </li>
+                    <ul>
+                      <li>Unit Price <%= p.product.price %></li>
+                      <li>Total Payment Amount <%= (p.product.price * p.quantity) %></li>
+                    </ul>
+                <% }); %>
+              </ul>
+            </li>
+            <% }); %>
+          </ul>
+    <% } %>
+  </main>
 <%- include('../includes/end.ejs') %>

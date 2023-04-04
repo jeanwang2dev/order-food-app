@@ -11,4 +11,5 @@ module.exports = {
     gcs_key_file: process.env.GOOGLE_APPLICATION_CREDENTIALS,
     gcs_folder_name:process.env.GCS_FOLDER_NAME,
     site_url: process.env.SITE_URL,
+    session_secret: process.env.SESSION_SECRET,
 }
