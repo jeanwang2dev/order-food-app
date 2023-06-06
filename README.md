@@ -5,7 +5,7 @@
 ```
 npm install
 ```
-create .env file for necessary 
+create .env file from .env-example
 
 ```
 node app.js
