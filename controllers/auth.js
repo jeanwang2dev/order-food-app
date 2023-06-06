@@ -11,9 +11,16 @@ exports.getLogin = (req, res, next) => {
 exports.postLogin = (req, res, next) => {
     Customer.findById("6428a5107cd3a7b284f95cdf")
       .then((customer) => {
+        if(req.session.isGuestLoggedIn){
+          req.session.isGuestLoggedIn = false;
+        }
         req.session.isCustomerLoggedIn = true;
         req.session.customer = customer;
-        res.redirect('/');
+        req.session.save( err => {
+          console.log(err);
+          res.redirect('/');
+        });
+        
       })
       .catch((err) => console.log(err));
 };

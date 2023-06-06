@@ -1,4 +1,6 @@
-# basic express server
+# An food ordering App
+
+- uses express, EJS template mongodb, offload images to Google Cloud Storage,
 
 ```
 node app.js
@@ -17,6 +19,7 @@ curl --header 'content-type: application/json' localhost:3000/hello --data '{"fo
 ```
 
 # basic http server then go to localhost:3000 from browser
+
 ```
 node http.js
 ```

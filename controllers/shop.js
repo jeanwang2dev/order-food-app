@@ -52,7 +52,16 @@ exports.getProduct = (req, res, next) => {
 
 exports.getCart = async (req, res, next) => {
   // get Cart page for guest
-  if(req.session.isGuestLoggedIn){
+  if(!req.session.isCustomerLoggedIn && !req.session.isGuestLoggedIn){
+    return res.render("shop/cart", {
+      pageTitle: "Your Cart",
+      path: "/cart",
+      products: [],
+      userName: 'Anonymous',
+      isAuthenticated: false,
+    });
+  }
+  if(!req.session.isCustomerLoggedIn){
     try {
       const guest = await req.guest.populate("cart.items.productId");
       const products = guest.cart.items;
@@ -97,34 +106,41 @@ exports.postCart = async (req, res, next) => {
     console.log('this is a guest!');
     //create a session for guest
     req.session.isGuestLoggedIn = true;
+
     const guestUID = req.cookies[`guestUID`];
-    const guest = await Guest.findOne({ uid: req.cookies[`guestUID`] });
+    let guest = await Guest.findOne({ uid: req.cookies[`guestUID`] }); 
+
+    const product = await Product.findById(prodId);
     if( guestUID === undefined || !guest){
       console.log('this is a new guest without uid or no uid matches in db.');
       // new guest withou uid, set cookie guestUID
       const uuid = uuidv4();
       res.cookie(`guestUID`, uuid);
       // create an empty cart for the new guest and store it with uuid in db
-      const guest = new Guest({
+      let newGuest = new Guest({
         uid: uuid,
         cart: { items: []},
       });
-      await guest.save();
+      guest = await newGuest.save();
       // get product by product ID and add to guest cart
-      const product = await Product.findById(prodId);
-      await guest.addToCart(product);
-      req.session.guest = guest;
-      res.redirect("/cart");
-    } else {
-      console.log('this is an old guest came back');      
-      console.log('guestUID:', req.cookies[`guestUID`]);
-      // look for this guest in db and get its cart infomation
-      const product = await Product.findById(prodId);
-      await guest.addToCart(product);
-      req.session.guest = guest;
-      res.redirect("/cart");
-    } 
+      // await guest.addToCart(product);
+      // req.session.guest = guest;
+      // res.redirect("/cart");
 
+    } 
+    // else {
+    //   console.log('this is an old guest came back');      
+    //   console.log('guestUID:', req.cookies[`guestUID`]);
+    //   // look for this guest in db and get its cart infomation
+    //   //console.log('guest', guest);
+    // } 
+    await guest.addToCart(product);
+    req.session.guest = guest;
+    req.session.save( err => {
+      console.log(err);
+      res.redirect("/cart");
+    });
+    
   } else { // for customer
     Product.findById(prodId)
       .then((product) => {
@@ -142,7 +158,9 @@ exports.postCart = async (req, res, next) => {
 
 exports.postDeleteCartProduct = (req, res, next) => {
   const prodId = req.body.productId;
-  req.customer
+
+  if(req.session.isCustomerLoggedIn){
+    req.customer
     .removeFromCart(prodId)
     .then((result) => {
       res.redirect("/cart");
@@ -150,6 +168,17 @@ exports.postDeleteCartProduct = (req, res, next) => {
     .catch((err) => {
       console.log(err);
     });
+  } else { // isGuestLoggedIn
+    req.guest
+    .removeFromCart(prodId)
+    .then((result) => {
+      res.redirect("/cart");
+    })
+    .catch((err) => {
+      console.log(err);
+    });
+  }
+
 };
 
 exports.postOrder = async (req, res, next) => {
