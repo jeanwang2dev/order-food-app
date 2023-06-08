@@ -3,4 +3,5 @@ node_modules/
 data/
 access.log
 newkey.json
+mykey.json
 
