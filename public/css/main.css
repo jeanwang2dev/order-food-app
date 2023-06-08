@@ -40,10 +40,6 @@ form {
   align-items: center;
 }
 
-.main-header__admin {
-  background-color: rgb(221, 182, 108);
-}
-
 .main-header__nav {
   height: 100%;
   width: 100%;
@@ -51,7 +47,6 @@ form {
   align-items: center;
   justify-content: space-between;
 }
-
 
 .main-header__item-list {
   list-style: none;
@@ -176,25 +171,6 @@ form {
 
 .card {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.26);
-}
-
-.card__header {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.card__header h1 {
-  flex-grow: 2;
-}
-
-.card__featured {
-  text-transform: capitalize;
-  color: #944013;
-  font-weight: bold;
-  background-color: #FDF6B2;
-  border-radius: 8px;
-  padding: 5px;
 }
 
 .card__header,

@@ -13,19 +13,15 @@ const productSchema = new Schema({
     },
     description: {
         type: String,
-        require: false
-    },
-    isfeatured: {
-        type: Boolean,
-        require: false
+        require: true
     },
     imageUrl: {
         type: String,
         require: true
     },
-    adminId: {
+    userId: {
         type: Schema.Types.ObjectId,
-        ref: 'Administrator',
+        ref: 'User',
         require: true
     }
 });

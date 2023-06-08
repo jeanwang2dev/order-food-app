@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
 
-const customerSchema = new Schema(
+const userSchema = new Schema(
   {
     name: {
         type: String,
@@ -16,6 +16,8 @@ const customerSchema = new Schema(
       type: String,
       require: true
     },
+    resetToken: String,
+    resetTokenEXP: Date,
     cart: {
         items: [{
             productId: {
@@ -36,7 +38,7 @@ const customerSchema = new Schema(
 
 );
 
-customerSchema.methods.addToCart = function(product) {
+userSchema.methods.addToCart = function(product) {
     // if the product already exists in the cart
     const cartProductIndex = this.cart.items.findIndex((cp) => {
       return cp.productId.toString() === product._id.toString();
@@ -62,7 +64,7 @@ customerSchema.methods.addToCart = function(product) {
     return this.save();
 }
 
-customerSchema.methods.removeFromCart = function(prodId) {
+userSchema.methods.removeFromCart = function(prodId) {
     const updatedCartItems = this.cart.items.filter((item) => {
       return item.productId.toString() !== prodId.toString();
     });    
@@ -70,10 +72,10 @@ customerSchema.methods.removeFromCart = function(prodId) {
     return this.save();
 }
 
-customerSchema.methods.clearCart = function() {
+userSchema.methods.clearCart = function() {
   this.cart = { items: []};
   return this.save();
 }
 
-module.exports = mongoose.model('Customer', customerSchema);
+module.exports = mongoose.model('User', userSchema);
 

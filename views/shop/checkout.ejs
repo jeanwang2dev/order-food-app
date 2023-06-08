@@ -4,6 +4,22 @@
 <body>
     <%- include('../includes/navigation.ejs') %>
     <main>
-        <p>This is the chekcout page for customer: </p>
+        <h1>This is the chekcout page for customer: </h1>
+        <p><%= userEmail %></p>
+        <% if (products.length > 0) { %>
+            <ul class="cart__item-list">
+                <% products.forEach(productItem => { %>
+                    <li class="cart__item">
+                        <h2><%= productItem.productId.title %></h2>
+                        <h2>Quantity: <%= productItem.quantity %></h2>
+                    </li>
+                <% }) %>
+            </ul>
+            <div class="centered">
+                <h2>Total: <%= totalSum %></h2>
+                <input type="hidden" id="sid" value="<%= sessionId %>">
+                <button id="order-btn" class="btn">ORDER</button>
+            </div>
+        <% } %>    
     </main>
 <%- include('../includes/end.ejs') %>

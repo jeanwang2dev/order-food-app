@@ -1,36 +1,78 @@
-const { v4: uuidv4 } = require('uuid');
+const path = require('path');
+const fs = require('fs');
+const PDFDocument = require("pdfkit");
 
+const { secret_key }= require('../util/config');
+const stripe = require('stripe')(secret_key);
 const Product = require("../models/product");
 const Order = require("../models/order");
-const Guest = require('../models/guest');
+const generatePDFonGCS = require("../util/helpers").generatePDFonGCS;
 
+const ITEMS_PER_PAGE = 2;
+
+//Home page for customers
 exports.getHome = (req, res, next) => {
-  Product.find({ isfeatured: true })
-    .then((products) => {
-      res.render("shop", {
+  // retrieve what page we are on  
+  const page = req.query.page ? +req.query.page : 1;
+  let totalItems = 0;
+  Product.find()
+    .countDocuments()
+    .then( numProducts => {
+      totalItems = numProducts;
+      //console.log(ITEMS_PER_PAGE * page < totalItems); 
+      return Product.find()
+        .skip( (page - 1) * ITEMS_PER_PAGE )
+        .limit(ITEMS_PER_PAGE)
+    } )
+    .then((products) => { 
+      res.render("shop/index", {
         prods: products,
-        pageTitle: "Shop Home",
+        pageTitle: "Shop",
         path: "/",
-        isAuthenticated: req.session.isCustomerLoggedIn,
+        currentPage: page,
+        hasNextPage: ITEMS_PER_PAGE * page < totalItems,
+        hasPreviousPage: page > 1,
+        nextPage: page + 1,
+        previousPage: page - 1,
+        lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE)        
       });
     })
     .catch((err) => {
-      console.log(err);
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     });
 };
 
 exports.getProducts = (req, res, next) => {
+  const page = req.query.page ? +req.query.page : 1;
+  let totalItems = 0;
   Product.find()
+    .countDocuments()
+    .then( numProducts => {
+      totalItems = numProducts;
+      //console.log(ITEMS_PER_PAGE * page < totalItems); 
+      return Product.find()
+        .skip( (page - 1) * ITEMS_PER_PAGE )
+        .limit(ITEMS_PER_PAGE)
+    } )
     .then((products) => {
       res.render("shop/product-list", {
         prods: products,
-        pageTitle: "Shop Products",
-        path: "/",
-        isAuthenticated: req.session.isCustomerLoggedIn,
+        pageTitle: "All Products",
+        path: "/products",
+        currentPage: page,
+        hasNextPage: ITEMS_PER_PAGE * page < totalItems,
+        hasPreviousPage: page > 1,
+        nextPage: page + 1,
+        previousPage: page - 1,
+        lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE)        
       });
     })
     .catch((err) => {
-      console.log(err);
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     });
 };
 
@@ -40,197 +82,159 @@ exports.getProduct = (req, res, next) => {
     .then((product) => {
       res.render("shop/product-detail", {
         product: product,
-        pageTitle: "Product Detail",
+        pageTitle: product.title,
         path: "/products",
-        isAuthenticated: req.session.isCustomerLoggedIn,
       });
     })
     .catch((err) => {
-      console.log(err);
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     });
 };
 
-exports.getCart = async (req, res, next) => {
-  // get Cart page for guest
-  if(!req.session.isCustomerLoggedIn && !req.session.isGuestLoggedIn){
-    return res.render("shop/cart", {
-      pageTitle: "Your Cart",
-      path: "/cart",
-      products: [],
-      userName: 'Anonymous',
-      isAuthenticated: false,
-    });
-  }
-  if(!req.session.isCustomerLoggedIn){
-    try {
-      const guest = await req.guest.populate("cart.items.productId");
-      const products = guest.cart.items;
+exports.getCart = (req, res, next) => {
+  req.user
+    .populate("cart.items.productId")
+    .then((user) => {
+      const products = user.cart.items;
+      //console.log(products);
+      const email = user.email;
       res.render("shop/cart", {
         pageTitle: "Your Cart",
         path: "/cart",
         products: products,
-        userName: 'Anonymous',
-        isAuthenticated: req.session.isCustomerLoggedIn,
+        userEmail: email
       });
-    } catch (err) {
-      console.log(err);
-    }
-  }
-
-  // get Cart page for customer
-  if(req.session.isCustomerLoggedIn){
-    try {
-      const customer = await req.customer.populate("cart.items.productId");
-      const products = customer.cart.items;
-      const userName = customer.name;
-      res.render("shop/cart", {
-        pageTitle: "Your Cart",
-        path: "/cart",
-        products: products,
-        userName: userName,
-        isAuthenticated: req.session.isCustomerLoggedIn,
-      });
-    } catch (err) {
-      console.log(err);
-    }
-  }
-
+    })
+    .catch((err) => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
-exports.postCart = async (req, res, next) => {
-
+exports.postCart = (req, res, next) => {
   const prodId = req.body.productId;
-    
-  // for guest
-  if( !req.session.isCustomerLoggedIn) {
-    console.log('this is a guest!');
-    //create a session for guest
-    req.session.isGuestLoggedIn = true;
-
-    const guestUID = req.cookies[`guestUID`];
-    let guest = await Guest.findOne({ uid: req.cookies[`guestUID`] }); 
-
-    const product = await Product.findById(prodId);
-    if( guestUID === undefined || !guest){
-      console.log('this is a new guest without uid or no uid matches in db.');
-      // new guest withou uid, set cookie guestUID
-      const uuid = uuidv4();
-      res.cookie(`guestUID`, uuid);
-      // create an empty cart for the new guest and store it with uuid in db
-      let newGuest = new Guest({
-        uid: uuid,
-        cart: { items: []},
-      });
-      guest = await newGuest.save();
-      // get product by product ID and add to guest cart
-      // await guest.addToCart(product);
-      // req.session.guest = guest;
-      // res.redirect("/cart");
-
-    } 
-    // else {
-    //   console.log('this is an old guest came back');      
-    //   console.log('guestUID:', req.cookies[`guestUID`]);
-    //   // look for this guest in db and get its cart infomation
-    //   //console.log('guest', guest);
-    // } 
-    await guest.addToCart(product);
-    req.session.guest = guest;
-    req.session.save( err => {
-      console.log(err);
+  Product.findById(prodId)
+    .then((product) => {
+      return req.user.addToCart(product);
+    })
+    .then((result) => {
       res.redirect("/cart");
+    })
+    .catch((err) => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     });
-    
-  } else { // for customer
-    Product.findById(prodId)
-      .then((product) => {
-        return req.customer.addToCart(product);
-      })
-      .then((result) => {
-        res.redirect("/cart");
-      })
-      .catch((err) => {
-        console.log(err);
-      });
-  }
-
 };
 
 exports.postDeleteCartProduct = (req, res, next) => {
   const prodId = req.body.productId;
-
-  if(req.session.isCustomerLoggedIn){
-    req.customer
+  req.user
     .removeFromCart(prodId)
     .then((result) => {
       res.redirect("/cart");
     })
     .catch((err) => {
-      console.log(err);
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     });
-  } else { // isGuestLoggedIn
-    req.guest
-    .removeFromCart(prodId)
-    .then((result) => {
-      res.redirect("/cart");
-    })
-    .catch((err) => {
-      console.log(err);
-    });
-  }
-
 };
 
 exports.postOrder = async (req, res, next) => {
+
   try {
-    const customer = await req.customer.populate(
-      "cart.items.productId"
-    );
-    const products = customer.cart.items.map((i) => {
-      return { quantity: i.quantity, product: { ...i.productId._doc } };
+    const user = await req.user.populate("cart.items.productId");
+    const products = user.cart.items.map((i) => {
+        return { quantity: i.quantity, product: { ...i.productId._doc } };
     });
 
     const order = new Order({
-      customer: {
-        email: req.customer.email,
-        customerId: req.customer,
+      user: {
+        email: req.user.email,
+        userId: req.user,
       },
       products: products,
     });
-    //const savedOrder = await order.save();
-    //const orderID = savedOrder._id;
-    // created an invoice pdf with the OrderID and upload to GCS
-    // const pdfUrl = await generatePDFonGCS(orderID);
-    // savedOrder.invoiceUrl = pdfUrl;
+    const savedOrder = await order.save();
+    const orderID = savedOrder._id;
+    // created an invoice pdf with the OrderID and upload to GCS 
+    const pdfUrl = await generatePDFonGCS(orderID);
+    savedOrder.invoiceUrl = pdfUrl;
     // return the url and save in order collection
-    //await savedOrder.save();
-    await order.save();
-    await req.customer.clearCart();
+    await savedOrder.save();
+    await req.user.clearCart();
     res.redirect("/orders");
-  } catch (err) {
-    console.log(err);
-    // const error = new Error(err);
-    // error.httpStatusCode = 500;
-    // return next(error);
+  } catch(err){
+      console.log(err);
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
   }
+
 };
 
 exports.getOrders = (req, res, next) => {
-  let customerName = req.customer.name;
-  Order.find({ "customer.customerId": req.customer._id })
+  Order.find({ "user.userId": req.user._id })
     .then((orders) => {
       res.render("shop/orders", {
         pageTitle: "Orders",
         path: "/orders",
         orders: orders,
-        name: customerName,
-        isAuthenticated: req.session.isCustomerLoggedIn,
       });
     })
     .catch((err) => {
-      console.log(err);
-      // const error = new Error(err);
-      // error.httpStatusCode = 500;
-      // return next(error);
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
+};
+
+exports.getCheckout = (req, res, next) => {
+  let products;
+  let total = 0;
+  let userEmail;
+  req.user
+    .populate("cart.items.productId")
+    .then((user) => {
+      products = user.cart.items;
+      userEmail = user.email;
+      total = 0;
+      products.forEach( p => {
+        total += p.quantity * p.productId.price;
+      });
+
+      return stripe.checkout.sessions.create({
+          payment_method_types: ['card'],
+          line_items: products.map(p => {
+            return {
+              name: p.productId.title,
+              description: p.productId.description,
+              amount: Math.round(p.productId.price.toFixed(2) * 100),
+              currency: 'usd',
+              quantity: p.quantity
+            }
+          }),
+          success_url: req.protocol + '://' + req.get('host') + '/checkout/success',
+          cancel_url: req.protocol + '://' + req.get('host') + '/checkout/cancel',
+      });
+    })
+    .then(session => {
+      res.render("shop/checkout", {
+        pageTitle: "Checkout",
+        path: "/checkout",
+        products: products,
+        totalSum: total.toFixed(2),
+        sessionId: session.id,
+        userEmail: userEmail
+      });
+    })
+    .catch((err) => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     });
 };

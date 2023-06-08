@@ -8,15 +8,15 @@ const orderSchema = new Schema(
             product: { type: Object, require: true},
             quantity: { type: Number, require: true}
         }],
-        customer: {
+        user: {
             email: {
                 type: String,
                 require: true
             },
-            customerId: {
+            userId: {
                 type: Schema.Types.ObjectId,
                 require: true,
-                ref: 'Customer'
+                ref: 'User'
             }
         },
         invoiceUrl: {

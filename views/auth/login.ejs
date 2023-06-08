@@ -5,21 +5,24 @@
 <body>
     <%- include('../includes/navigation.ejs') %>
     <main>
+        <% if (errorMsg) {%>
+            <div class="user-msg user-msg--error"><%= errorMsg %></div>
+        <% } %>
         <form class="login-form" action="/login" method="POST">
-           
+            <input type="hidden" name="_csrf" value="<%= csrfToken %>">
             <div class="form-control">
                 <label for="email">E-mail</label>
                 <input 
-                    class="" 
+                    class="<%= validationErrors.find( e => e.param === 'email') ? 'invalid': '' %>" 
                     type="text" 
                     name="email" 
                     id="email"
-                    value="jean@test.com">
+                    value="test1@temptesting.com">
             </div>
             <div class="form-control">
                 <label for="password">Password</label>
                 <input 
-                    class="" 
+                    class="<%= validationErrors.find( e => e.param === 'password') ? 'invalid': '' %>" 
                     type="password" 
                     name="password" 
                     id="password"
